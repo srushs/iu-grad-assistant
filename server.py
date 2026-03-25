@@ -1,4 +1,6 @@
 from mcp.server.fastmcp import FastMCP
+import os
+import uvicorn
 
 # ─── Initialize the MCP server ───────────────────────────────────────────────
 mcp = FastMCP("iu-graduate-assistant")
@@ -160,6 +162,8 @@ def get_school_links(school: str) -> str:
 
 
 # ─── Run the Server ───────────────────────────────────────────────────────────
+
+
 if __name__ == "__main__":
-    # mcp.run(transport="stdio")
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
