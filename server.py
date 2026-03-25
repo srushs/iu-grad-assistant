@@ -163,7 +163,24 @@ def get_school_links(school: str) -> str:
 
 # ─── Run the Server ───────────────────────────────────────────────────────────
 
+class FixHostMiddleware:
+    """Allows MCP server to accept requests from Render's proxy."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] in ("http", "websocket"):
+            new_headers = []
+            for key, value in scope.get("headers", []):
+                if key == b"host":
+                    new_headers.append((b"host", b"localhost:8000"))
+                else:
+                    new_headers.append((key, value))
+            scope["headers"] = new_headers
+        await self.app(scope, receive, send)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
+    app = mcp.streamable_http_app()
+    app = FixHostMiddleware(app)
+    uvicorn.run(app, host="0.0.0.0", port=port)
