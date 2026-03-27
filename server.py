@@ -70,22 +70,24 @@ def find_school(school_input: str) -> dict | None:
     return None
 
 
-# ─── Tool 1: Get Programs Page ────────────────────────────────────────────────
 @mcp.tool()
 def get_program_page(school: str) -> str:
     """
-    Returns the graduate programs page URL for a specific IU school.
-
-    Use this tool when a student asks about:
-    - What graduate programs or degrees a school offers
-    - Program overviews, curriculum, or courses
-    - Whether a specific school offers a certain degree
-    - General "what can I study at X school" questions
+    Returns the official graduate programs page URL for a specific IU school.
+    
+    ONLY use this tool when the student is explicitly asking for a link,
+    webpage, or URL to browse programs themselves. Examples:
+    - "Can you send me the link to Luddy's programs page?"
+    - "Where can I find the list of programs at Kelley?"
+    - "Give me the URL for O'Neill graduate programs"
+    
+    Do NOT use this tool for factual questions about programs, deadlines,
+    requirements, or GRE — those are answered by the knowledge source.
 
     Args:
         school: Name or keyword of the IU school.
                 Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi', 'Arts and Sciences'
+                'Law', 'Education', 'Jacobs', 'Eskenazi'
     """
     school_data = find_school(school)
     if school_data:
@@ -99,24 +101,26 @@ def get_program_page(school: str) -> str:
     )
 
 
-# ─── Tool 2: Get Admissions / Contact Page ────────────────────────────────────
 @mcp.tool()
 def get_admissions_contact(school: str) -> str:
     """
-    Returns the admissions and contact page URL for a specific IU school.
+    Returns the admissions contact page URL for a specific IU school.
 
-    Use this tool when a student asks about:
-    - How to apply to a graduate program
-    - Application deadlines or requirements
-    - GRE, TOEFL, or document submission questions
-    - Application fees
-    - Who to contact at a specific school
-    - General admissions process questions
+    ONLY use this tool when the student explicitly asks for contact
+    information, a contact page link, or where to reach admissions.
+    Examples:
+    - "How do I contact Luddy admissions?"
+    - "Give me the contact page for Kelley"
+    - "Where can I reach someone at O'Neill about my application?"
+
+    Do NOT use this tool for questions about deadlines, requirements,
+    GRE scores, or application steps — those are answered by the
+    knowledge source.
 
     Args:
         school: Name or keyword of the IU school.
                 Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi', 'Arts and Sciences'
+                'Law', 'Education', 'Jacobs', 'Eskenazi'
     """
     school_data = find_school(school)
     if school_data:
@@ -130,23 +134,26 @@ def get_admissions_contact(school: str) -> str:
     )
 
 
-# ─── Tool 3: Get Both Links ───────────────────────────────────────────────────
 @mcp.tool()
 def get_school_links(school: str) -> str:
     """
-    Returns both the graduate programs page and admissions contact page
+    Returns both the programs page and admissions contact page URLs
     for a specific IU school.
 
-    Use this tool when:
-    - The student's question is general or navigational ("where do I find info on X school")
-    - The student needs both program and admissions information
-    - It is unclear whether they need programs info or admissions help
-    - The student asks for an overview of a school
+    ONLY use this tool when the student explicitly asks for links or
+    web pages to visit, or asks where to find information online.
+    Examples:
+    - "Where can I find more information about Luddy online?"
+    - "Can you share the relevant pages for Kelley?"
+    - "I want to browse the O'Neill website myself"
+
+    Do NOT use this tool for factual questions that the knowledge
+    source can answer directly.
 
     Args:
         school: Name or keyword of the IU school.
                 Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi', 'Arts and Sciences'
+                'Law', 'Education', 'Jacobs', 'Eskenazi'
     """
     school_data = find_school(school)
     if school_data:
