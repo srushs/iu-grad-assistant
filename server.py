@@ -106,16 +106,17 @@ def get_admissions_contact(school: str) -> str:
     """
     Returns the admissions contact page URL for a specific IU school.
 
-    ONLY use this tool when the student explicitly asks for contact
-    information, a contact page link, or where to reach admissions.
-    Examples:
-    - "How do I contact Luddy admissions?"
-    - "Give me the contact page for Kelley"
-    - "Where can I reach someone at O'Neill about my application?"
+    ONLY use this tool when the student explicitly asks for a contact
+    page link or wants to be directed to a specific URL. Examples:
+    - "Give me the contact page for Luddy"
+    - "Send me the admissions contact link for Kelley"
+    - "What is the URL for O'Neill's contact page?"
 
-    Do NOT use this tool for questions about deadlines, requirements,
-    GRE scores, or application steps — those are answered by the
-    knowledge source.
+    Do NOT use this tool for:
+    - "How do I apply to X?" (knowledge source handles this)
+    - "What are the requirements for X?" (knowledge source handles this)
+    - "What are the deadlines for X?" (knowledge source handles this)
+    - Any factual admissions question — only use for explicit link requests
 
     Args:
         school: Name or keyword of the IU school.
