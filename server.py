@@ -10,48 +10,57 @@ mcp = FastMCP("iu-graduate-assistant")
 SCHOOL_DATA = {
     "hamilton lugar": {
         "keywords": ["hamilton lugar", "hls", "international", "global affairs"],
+        "name": "Hamilton Lugar School of Global and International Studies",
         "program_page": "https://hls.indiana.edu/academics/graduate/index.html",
         "contact_page": "https://hls.indiana.edu/about/contact.html",
     },
     "luddy": {
         "keywords": ["luddy", "informatics", "computer science", "data science",
                      "ai", "artificial intelligence", "cybersecurity", "computing"],
+        "name": "Luddy School of Informatics, Computing, and Engineering",
         "program_page": "https://luddy.indiana.edu/academics/grad-programs/index.html",
         "contact_page": "https://luddy.iu.edu/about/contact.html",
     },
     "kelley": {
         "keywords": ["kelley", "business", "mba", "msis", "finance", "accounting"],
+        "name": "Kelley School of Business",
         "program_page": "https://kelley.iu.edu/programs/index.html",
         "contact_page": "https://kelley.iu.edu/about/contact.html",
     },
     "oneill": {
         "keywords": ["o'neill", "oneill", "public affairs", "environmental affairs",
                      "public policy"],
+        "name": "O'Neill School of Public and Environmental Affairs",
         "program_page": "https://oneill.indiana.edu/masters/index.html",
         "contact_page": "https://oneill.indiana.edu/contact/index.html",
     },
     "arts and sciences": {
         "keywords": ["arts and sciences", "college of arts", "liberal arts"],
+        "name": "College of Arts and Sciences",
         "program_page": "https://college.indiana.edu/graduate/index.html",
         "contact_page": "https://college.indiana.edu/contact/index.html",
     },
     "law": {
         "keywords": ["law", "maurer", "legal"],
+        "name": "Maurer School of Law",
         "program_page": "https://law.indiana.edu/academics/graduate-degrees/index.html",
         "contact_page": "https://law.indiana.edu/about/contact-us.html",
     },
     "education": {
         "keywords": ["education", "teaching", "school of education"],
+        "name": "School of Education",
         "program_page": "https://education.indiana.edu/programs",
         "contact_page": "https://education.indiana.edu/contact/index.html",
     },
     "jacobs": {
         "keywords": ["jacobs", "music"],
+        "name": "Jacobs School of Music",
         "program_page": "https://music.indiana.edu/admissions/graduate/index.html",
         "contact_page": "https://music.indiana.edu/contact/index.html",
     },
     "eskenazi": {
         "keywords": ["eskenazi", "architecture", "art", "design"],
+        "name": "Eskenazi School of Art, Architecture + Design",
         "program_page": "https://eskenazi.indiana.edu/graduate/index.html",
         "contact_page": "https://eskenazi.indiana.edu/about/contact.html",
     },
@@ -61,111 +70,86 @@ FALLBACK_URL = "https://graduate.indiana.edu/programs/index.html"
 
 
 # ─── Helper Function ──────────────────────────────────────────────────────────
-def find_school(school_input: str) -> dict | None:
+def find_school(school_input: str) -> tuple[str, dict] | tuple[None, None]:
     """Match a school name or keyword to school data."""
     lower = school_input.lower()
     for school_key, data in SCHOOL_DATA.items():
         if any(kw in lower for kw in data["keywords"]):
-            return data
-    return None
+            return school_key, data
+    return None, None
 
 
 @mcp.tool()
-def get_program_page(school: str) -> str:
+def get_school_page_urls(school: str, query_type: str = "general") -> str:
     """
-    Returns the official graduate programs page URL for a specific IU school.
-    
-    ONLY use this tool when the student is explicitly asking for a link,
-    webpage, or URL to browse programs themselves. Examples:
-    - "Can you send me the link to Luddy's programs page?"
-    - "Where can I find the list of programs at Kelley?"
-    - "Give me the URL for O'Neill graduate programs"
-    
-    Do NOT use this tool for factual questions about programs, deadlines,
-    requirements, or GRE — those are answered by the knowledge source.
+    Returns official IU school webpage URLs (program page and/or contact page)
+    to SUPPLEMENT the knowledge source response.
+
+    This tool provides links only — it does not answer factual questions.
+    The knowledge source should always be consulted first for the actual answer.
+
+    Call this tool whenever a student's question mentions a specific IU school
+    AND falls into one of these categories:
+      - Questions about programs, courses, curriculum, or what a school offers
+      - Questions about admissions, how to apply, deadlines, requirements, fees
+      - Questions asking for links, URLs, or where to find information
+      - Any question where a school-specific link would help the student
+
+    query_type should be:
+      - "program"    → when the question is about programs, courses, curriculum
+      - "admissions" → when the question is about applying, deadlines, requirements
+      - "navigation" → when the student explicitly asks for a link or URL
+      - "general"    → when unsure or the question spans multiple categories
 
     Args:
-        school: Name or keyword of the IU school.
-                Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi'
+        school: Name or keyword of the IU school (e.g., 'Luddy', 'Kelley',
+                'O Neill', 'Hamilton Lugar', 'Law', 'Education', 'Jacobs',
+                'Eskenazi', 'Arts and Sciences')
+        query_type: One of 'program', 'admissions', 'navigation', 'general'
     """
-    school_data = find_school(school)
-    if school_data:
+    school_key, school_data = find_school(school)
+
+    if not school_data:
         return (
-            f"Here is the graduate programs page for that school:\n"
-            f"{school_data['program_page']}"
+            f"[SUPPLEMENTARY LINKS]\n"
+            f"Could not identify a specific IU school from '{school}'.\n"
+            f"Fallback: {FALLBACK_URL}\n\n"
+            f"[USAGE INSTRUCTION]\n"
+            f"Include the fallback link in your response since the school "
+            f"could not be identified."
         )
-    return (
-        f"I could not find a specific match for '{school}'. "
-        f"Please visit the IU Graduate School directory:\n{FALLBACK_URL}"
-    )
 
-
-@mcp.tool()
-def get_admissions_contact(school: str) -> str:
-    """
-    Returns the admissions contact page URL for a specific IU school.
-
-    ONLY use this tool when the student explicitly asks for a contact
-    page link or wants to be directed to a specific URL. Examples:
-    - "Give me the contact page for Luddy"
-    - "Send me the admissions contact link for Kelley"
-    - "What is the URL for O'Neill's contact page?"
-
-    Do NOT use this tool for:
-    - "How do I apply to X?" (knowledge source handles this)
-    - "What are the requirements for X?" (knowledge source handles this)
-    - "What are the deadlines for X?" (knowledge source handles this)
-    - Any factual admissions question — only use for explicit link requests
-
-    Args:
-        school: Name or keyword of the IU school.
-                Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi'
-    """
-    school_data = find_school(school)
-    if school_data:
-        return (
-            f"For admissions information and to contact the school directly:\n"
-            f"{school_data['contact_page']}"
-        )
-    return (
-        f"I could not find a specific match for '{school}'. "
-        f"Please visit the IU Graduate School directory:\n{FALLBACK_URL}"
-    )
-
-
-@mcp.tool()
-def get_school_links(school: str) -> str:
-    """
-    Returns both the programs page and admissions contact page URLs
-    for a specific IU school.
-
-    ONLY use this tool when the student explicitly asks for links or
-    web pages to visit, or asks where to find information online.
-    Examples:
-    - "Where can I find more information about Luddy online?"
-    - "Can you share the relevant pages for Kelley?"
-    - "I want to browse the O'Neill website myself"
-
-    Do NOT use this tool for factual questions that the knowledge
-    source can answer directly.
-
-    Args:
-        school: Name or keyword of the IU school.
-                Examples: 'Luddy', 'Kelley', 'O Neill', 'Hamilton Lugar',
-                'Law', 'Education', 'Jacobs', 'Eskenazi'
-    """
-    school_data = find_school(school)
-    if school_data:
-        return (
-            f"Here are the key pages for that school:\n\n"
+    # Build the link block based on query type
+    if query_type == "program":
+        links = f"Graduate Programs: {school_data['program_page']}"
+    elif query_type == "admissions":
+        links = f"Contact & Admissions: {school_data['contact_page']}"
+    elif query_type == "navigation":
+        links = (
             f"Graduate Programs: {school_data['program_page']}\n"
-            f"Admissions & Contact: {school_data['contact_page']}"
+            f"Contact & Admissions: {school_data['contact_page']}"
         )
+    else:  # general
+        links = (
+            f"Graduate Programs: {school_data['program_page']}\n"
+            f"Contact & Admissions: {school_data['contact_page']}"
+        )
+
     return (
-        f"I could not identify a specific IU school from '{school}'. "
-        f"Please visit the IU Graduate School directory:\n{FALLBACK_URL}"
+        f"[SUPPLEMENTARY LINKS for {school_data['name']}]\n"
+        f"{links}\n\n"
+        f"[USAGE INSTRUCTION]\n"
+        f"These links supplement the knowledge source response. Follow these rules:\n"
+        f"1. If the knowledge source fully answered the student's question with "
+        f"specific details (deadlines, steps, requirements, fees, etc.), "
+        f"do NOT include these links — the answer is already complete.\n"
+        f"2. If the knowledge source provided a partial or vague answer, "
+        f"append the relevant link at the END of your response as a "
+        f"'For more information' reference.\n"
+        f"3. If the knowledge source had NO relevant information, use these "
+        f"links as the primary reference and direct the student to visit them.\n"
+        f"4. If the student explicitly asked for a link or URL, always include it.\n"
+        f"5. Never explain why you are or aren't including a link."
     )
 
 
