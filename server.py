@@ -64,6 +64,8 @@ SCHOOL_DATA = {
 }
 
 FALLBACK_URL = "https://graduate.indiana.edu/programs/index.html"
+IU_HOUSING_URL = "https://housing.indiana.edu/graduate-family/index.html"
+IU_GRADUATE_HOUSING_URL = "https://gradoffice.indiana.edu/student-life/housing.html"
 
 def find_school(school_input: str) -> tuple[str, dict] | tuple[None, None]:
     """Match a school name or keyword to school data."""
@@ -96,8 +98,8 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
 
     ── RESOLVING THE SCHOOL FROM CONTEXT ────────────────────────────────────────
     The student's current message may not name a school explicitly. This happens
-    often with short follow-ups like "Yes", "Tell me more", "What about courses?",
-    "Can I get that link?", or "What are the deadlines?".
+    often with short follow-ups like "Yes", "Sure", "Please", "Tell me more",
+    "What about courses?", "Can I get that link?", or "What are the deadlines?".
 
     In these cases, you MUST resolve which school the student is referring to by
     looking at the most recent prior message in the conversation that named a
@@ -118,6 +120,24 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
       - "navigation" → explicitly asking for a link or URL
       - "general"    → spans multiple categories or unclear
 
+    ── BREAKING THE CONFIRMATION LOOP ───────────────────────────────────────────
+    CRITICAL: If the previous assistant message ended with a question like
+    "Would you like a link?", "Would you like more details?", "Would you like
+    the direct URL?", or any similar offer — and the student replies with "yes",
+    "sure", "please", "ok", "yeah", or any affirmative — you MUST immediately
+    provide the link or information that was offered. Do NOT ask again.
+    Do NOT re-describe what you are about to provide. Just provide it.
+
+    Asking the same confirmation question more than once is a hard failure.
+    The student said yes. Give them what they asked for now.
+
+    ── SINGLE-TOPIC FOCUS ────────────────────────────────────────────────────────
+    Each response must address exactly ONE topic — the topic of the student's
+    most recent message. If the conversation has touched on multiple topics
+    (e.g., application steps AND housing), do NOT merge them.
+    Pick the single topic the student is currently asking about and answer only
+    that. Blending topics in one response is confusing and unhelpful.
+
     Args:
         school: Name or keyword of the IU school (e.g., 'Luddy', 'Kelley',
                 'O Neill', 'Hamilton Lugar', 'Law', 'Education', 'Jacobs',
@@ -133,11 +153,14 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
             f"Fallback: {FALLBACK_URL}\n\n"
             f"[USAGE INSTRUCTION]\n"
             f"The school could not be identified — this likely means the student's "
-            f"message was a short follow-up (e.g., 'Yes', 'Tell me more'). "
-            f"Review the conversation history to find the most recently mentioned "
-            f"IU school and call this tool again with that school name. "
-            f"If no school can be found, include the fallback link and ask the "
-            f"student which school they are referring to."
+            f"message was a short follow-up (e.g., 'Yes', 'Sure', 'Please'). "
+            f"Check whether the previous assistant message offered the student a "
+            f"link or more information. If it did, provide that information now "
+            f"without asking again. "
+            f"If a school can be found from conversation history, call this tool "
+            f"again with that school name. "
+            f"If no school can be determined, include the fallback link and ask "
+            f"the student which school they are referring to."
         )
 
     if query_type == "program":
@@ -149,7 +172,7 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
             f"Graduate Programs: {school_data['program_page']}\n"
             f"Contact & Admissions: {school_data['contact_page']}"
         )
-    else: 
+    else:  
         links = (
             f"Graduate Programs: {school_data['program_page']}\n"
             f"Contact & Admissions: {school_data['contact_page']}"
@@ -170,10 +193,55 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
         f"links as the primary reference and direct the student to visit them.\n"
         f"4. If the student explicitly asked for a link or URL, always include it.\n"
         f"5. Never explain why you are or aren't including a link.\n"
-        f"6. CONTEXT CONTINUITY: Stay focused on the topic the student asked about "
-        f"in their current message. Do not drift to a different topic (e.g., switching "
-        f"from housing to programs) because an earlier turn mentioned it. Answer the "
-        f"most recent question, then append a link if appropriate."
+        f"6. CONTEXT CONTINUITY: Stay focused on the single topic the student asked "
+        f"about in their current message. Do not merge multiple topics (e.g., housing "
+        f"AND programs) into one response. Answer the most recent question only, then "
+        f"append a relevant link if appropriate.\n"
+        f"7. NO REPEAT OFFERS: If the previous assistant message already asked "
+        f"'Would you like a link?' and the student said yes, do NOT ask again. "
+        f"Provide the link directly and immediately."
+    )
+
+
+@mcp.tool()
+def get_housing_links(campus: str = "bloomington") -> str:
+    """
+    Returns official IU housing webpage URLs for graduate students.
+
+    ONLY call this tool when:
+      - The student explicitly asks about housing, accommodation, or where to live
+      - The student confirms they want housing links after a prior housing discussion
+        (e.g., they said "yes", "sure", "please" after the assistant offered housing info)
+
+    Do NOT call this tool for questions about programs, admissions, or coursework.
+
+    ── BREAKING THE CONFIRMATION LOOP ───────────────────────────────────────────
+    CRITICAL: If the previous assistant message offered housing links and the student
+    replied "yes", "sure", "please" or any affirmative — provide the links NOW.
+    Do NOT ask again whether they want the links. Just give them.
+
+    Args:
+        campus: The IU campus (default: 'bloomington')
+    """
+    if "bloomington" in campus.lower() or campus.lower() in ("iu", "iub", ""):
+        links = (
+            f"IU Bloomington Graduate & Family Housing: {IU_HOUSING_URL}\n"
+            f"Graduate School Housing Resources: {IU_GRADUATE_HOUSING_URL}"
+        )
+        campus_name = "IU Bloomington"
+    else:
+        links = f"IU Graduate Programs (for campus housing info): {FALLBACK_URL}"
+        campus_name = campus
+
+    return (
+        f"[HOUSING LINKS for {campus_name}]\n"
+        f"{links}\n\n"
+        f"[USAGE INSTRUCTION]\n"
+        f"Provide these links directly to the student without re-describing the "
+        f"housing options or asking another confirmation question. "
+        f"A short intro like 'Here are the housing links for IU Bloomington:' "
+        f"is sufficient. Do not merge housing information with program or "
+        f"admissions information in the same response."
     )
 
 
