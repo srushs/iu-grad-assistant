@@ -2,11 +2,8 @@ from mcp.server.fastmcp import FastMCP
 import os
 import uvicorn
 
-# ─── Initialize the MCP server ───────────────────────────────────────────────
 mcp = FastMCP("iu-graduate-assistant")
 
-
-# ─── School Data ─────────────────────────────────────────────────────────────
 SCHOOL_DATA = {
     "hamilton lugar": {
         "keywords": ["hamilton lugar", "hls", "international", "global affairs"],
@@ -68,8 +65,6 @@ SCHOOL_DATA = {
 
 FALLBACK_URL = "https://graduate.indiana.edu/programs/index.html"
 
-
-# ─── Helper Function ──────────────────────────────────────────────────────────
 def find_school(school_input: str) -> tuple[str, dict] | tuple[None, None]:
     """Match a school name or keyword to school data."""
     lower = school_input.lower()
@@ -88,18 +83,40 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
     This tool provides links only — it does not answer factual questions.
     The knowledge source should always be consulted first for the actual answer.
 
-    Call this tool whenever a student's question mentions a specific IU school
+    ── WHEN TO CALL THIS TOOL ───────────────────────────────────────────────────
+    Call this tool whenever a student's question involves a specific IU school
     AND falls into one of these categories:
       - Questions about programs, courses, curriculum, or what a school offers
       - Questions about admissions, how to apply, deadlines, requirements, fees
       - Questions asking for links, URLs, or where to find information
       - Any question where a school-specific link would help the student
 
-    query_type should be:
-      - "program"    → when the question is about programs, courses, curriculum
-      - "admissions" → when the question is about applying, deadlines, requirements
-      - "navigation" → when the student explicitly asks for a link or URL
-      - "general"    → when unsure or the question spans multiple categories
+    Do NOT call this tool for general questions (e.g., housing, campus life,
+    tuition) that do not reference a specific school.
+
+    ── RESOLVING THE SCHOOL FROM CONTEXT ────────────────────────────────────────
+    The student's current message may not name a school explicitly. This happens
+    often with short follow-ups like "Yes", "Tell me more", "What about courses?",
+    "Can I get that link?", or "What are the deadlines?".
+
+    In these cases, you MUST resolve which school the student is referring to by
+    looking at the most recent prior message in the conversation that named a
+    specific IU school. Use that school as the `school` parameter.
+
+    Example: If the prior context was about Luddy School and the student says
+    "Yes, give me the link", call this tool with school="Luddy".
+
+    If the school cannot be resolved from context even after reviewing the full
+    conversation history, ask the student: "Which IU school are you asking about?"
+    Do NOT call this tool with a guessed or fabricated school name.
+
+    ── RESOLVING THE QUERY TYPE FROM CONTEXT ────────────────────────────────────
+    Similarly, if the student's current message is ambiguous (e.g., "Tell me more"),
+    infer query_type from the most recent specific topic they asked about:
+      - "program"    → programs, courses, curriculum
+      - "admissions" → applying, deadlines, requirements, fees
+      - "navigation" → explicitly asking for a link or URL
+      - "general"    → spans multiple categories or unclear
 
     Args:
         school: Name or keyword of the IU school (e.g., 'Luddy', 'Kelley',
@@ -115,11 +132,14 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
             f"Could not identify a specific IU school from '{school}'.\n"
             f"Fallback: {FALLBACK_URL}\n\n"
             f"[USAGE INSTRUCTION]\n"
-            f"Include the fallback link in your response since the school "
-            f"could not be identified."
+            f"The school could not be identified — this likely means the student's "
+            f"message was a short follow-up (e.g., 'Yes', 'Tell me more'). "
+            f"Review the conversation history to find the most recently mentioned "
+            f"IU school and call this tool again with that school name. "
+            f"If no school can be found, include the fallback link and ask the "
+            f"student which school they are referring to."
         )
 
-    # Build the link block based on query type
     if query_type == "program":
         links = f"Graduate Programs: {school_data['program_page']}"
     elif query_type == "admissions":
@@ -129,7 +149,7 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
             f"Graduate Programs: {school_data['program_page']}\n"
             f"Contact & Admissions: {school_data['contact_page']}"
         )
-    else:  # general
+    else: 
         links = (
             f"Graduate Programs: {school_data['program_page']}\n"
             f"Contact & Admissions: {school_data['contact_page']}"
@@ -149,11 +169,13 @@ def get_school_page_urls(school: str, query_type: str = "general") -> str:
         f"3. If the knowledge source had NO relevant information, use these "
         f"links as the primary reference and direct the student to visit them.\n"
         f"4. If the student explicitly asked for a link or URL, always include it.\n"
-        f"5. Never explain why you are or aren't including a link."
+        f"5. Never explain why you are or aren't including a link.\n"
+        f"6. CONTEXT CONTINUITY: Stay focused on the topic the student asked about "
+        f"in their current message. Do not drift to a different topic (e.g., switching "
+        f"from housing to programs) because an earlier turn mentioned it. Answer the "
+        f"most recent question, then append a link if appropriate."
     )
 
-
-# ─── Run the Server ───────────────────────────────────────────────────────────
 
 class FixHostMiddleware:
     """Allows MCP server to accept requests from Render's proxy."""
