@@ -1,11 +1,8 @@
-# IU Graduate Programs MCP Server (Combined)
+# IU Graduate Programs MCP Server
 
-A lightweight MCP server that provides official webpage URLs, contact/admissions links,
-and housing resources for **all 15 Indiana University graduate schools**.
+A lightweight MCP server that provides official webpage URLs, contact/admissions links, and housing resources for **all 15 Indiana University graduate schools**.
 
-Designed to work alongside ChatAIU's knowledge sources as a supplement — the knowledge
-sources handle content questions (program details, courses, requirements), this server
-handles structured link data.
+Designed to work alongside ChatAIU's knowledge sources as a supplement — the knowledge sources handle content questions (program details, courses, requirements), this server handles structured link data.
 
 ---
 
